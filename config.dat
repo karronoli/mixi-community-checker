@@ -1,0 +1,25 @@
+(
+    MIXI_EMAIL => 'test@example.com',
+    MIXI_PASSWORD => 'testpassword',
+    MIXI_COMMUNITY_ID => '0000000',
+    IRON_CACHE_TOKEN => '000000000000000000000000000',
+    IRON_CACHE_PROJECT_ID => '000000000000000000000000',
+    # see name policy: perldoc IO::Iron #Policies
+    IRON_CACHE_NAME => 'ironcachename',
+    IRON_CACHE_KEY => 'mykey',
+    SMTP_HOST => 'smtp.example.com',
+    SMTP_USERNAME => 'test',
+    SMTP_PASSWORD => 'testpassword',
+    SMTP_FROM => 'test@example.com',
+    SMTP_TO => 'ml@example.com',
+    MAIL_HEADERS => [
+        "コミュニティに更新がありました．\n",
+        "※このメールアドレスは配信専用です．\n\n"
+    ],
+    MAIL_UPDATE_TEMPLATE =>
+      '更新日:%1$s, タイトル:%2$s, コメント数:%3$s' . "\n",
+    MAIL_FOOTERS => [
+        "\nご用の場合は test@example.com へ\n"
+    ],
+    MAIL_TITLE => 'コミュニティ更新速報 %Y/%m/%d',
+)

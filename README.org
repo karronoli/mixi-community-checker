@@ -1,0 +1,33 @@
+* What
+ミクシィコミュニティに更新があったら指定したアドレスにメールする．
+
+
+* How
+1. mixiにログイン
+2. コミュニティページのトピックからアドレスを拾う
+3. トピックごとの更新日orコメント数をIronCacheに入れた分と比較
+4. メール送信
+
+
+* Install
+** 必要なもの
+- mixiアカウント
+- メール送信に使うアカウント
+要TLS送信
+- IronCacheを利用するための準備
+HerokuからIronCacheを使う前提で実装．
+適当なmemcacheクライアントに置き換えることも可能．
+- perl & carton
+
+config.datを適当に編集
+$ carton install
+$ carton exec perl mcommunity_check.pl
+
+** Heroku Scheduler
+こんな感じで登録．
+プロセスは10秒程度で終わるから10分に1回起動でも無料枠でいけるはず．
+$ perl -Ilocal/lib/perl5 mcommunity_check.pl
+
+
+* License
+Licensed under the MIT License.
