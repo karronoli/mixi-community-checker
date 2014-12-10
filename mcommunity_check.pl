@@ -23,7 +23,7 @@ use constant {
     MIXI_NO_UPDATE_STATUS => 2,
     IRON_CACHE_HOST => 'cache-aws-us-east-1.iron.io',
 };
-our %config;
+my %config;
 BEGIN {
     %config = do 'config.dat' or die "BAD cofig.dat!";
 }
@@ -40,16 +40,14 @@ BEGIN {
         if(not $num == 220){
                 croak "Invalid response for STARTTLS: $num $txt\n";
         }
-        if(not IO::Socket::SSL::socket_to_SSL($me->{sock},
-                SSL_version     =>      "TLSv1")){
-                        croak "Couldn't start TLS: ".IO::Socket::SSL::errstr."\n
-";
+        if(not IO::Socket::SSL::socket_to_SSL($me->{sock})){
+                croak "Couldn't start TLS: ".IO::Socket::SSL::errstr."\n";
         }
         $me->hello();
     };
 };
 
-my $content = do {
+my $html = do {
     my $mech = WWW::Mechanize->new(autocheck => 1);
     $mech->get(MIXI_URL);
     $mech->submit_form(fields => {
@@ -61,10 +59,10 @@ my $content = do {
     $mech->content;
 };
 
-my %node = do {
+my %topics = do {
     my %result;
     my $tree = HTML::TreeBuilder::XPath->new;
-    $tree->parse($content) or die $!;
+    $tree->parse($html) or die $!;
     my @dt = $tree->findnodes(q{//div[@id='newCommunityTopic']//dt});
     for my $dt (@dt) {
         my ($a) = $dt->findnodes(q{./following-sibling::dd/a[1]});
@@ -79,14 +77,14 @@ my %node = do {
     }
     %result;
 };
-unless (%node) {
+unless (%topics) {
     warn "BAD community page layout.\n";
     exit(MIXI_BAD_STATUS);
 }
 
 # 削除はurlのクエリ部分から判定できない comment_count と date 変化無
 # throw IronHTTPCallException
-my @node_id = do {
+my @topic_ids = do {
     my @result;
     my $iron_cache = do {
         my $client = IO::Iron::IronCache::Client->new
@@ -106,20 +104,20 @@ my @node_id = do {
     if (my $old = eval{$iron_cache->get(key => $config{IRON_CACHE_KEY})}) {
         my %old = %{thaw $old->value};
         my @update = grep {
-            $node{$_} &&
-              ($node{$_}->{comment_count} ne $old{$_}->{comment_count})
-              || $node{$_}->{date} ne $old{$_}->{date}
+            $topics{$_} &&
+              ($topics{$_}->{comment_count} ne $old{$_}->{comment_count})
+              || $topics{$_}->{date} ne $old{$_}->{date}
           } keys %old;
-        my @new = grep { !$old{$_} } keys %node;
+        my @new = grep { !exists $old{$_} } keys %topics;
         push @result, @update, @new;
     } else {
-        push @result, keys %node;
+        push @result, keys %topics;
     }
-    my $item = IO::Iron::IronCache::Item->new(value => nfreeze(\%node));
+    my $item = IO::Iron::IronCache::Item->new(value => nfreeze(\%topics));
     $iron_cache->put(key => $config{IRON_CACHE_KEY}, item => $item);
-    sort {$node{$b}->{date} cmp $node{$a}->{date}} @result;
+    sort {$topics{$b}->{date} cmp $topics{$a}->{date}} @result;
 };
-unless (@node_id) {
+unless (@topic_ids) {
     print "No update\n";
     exit(MIXI_NO_UPDATE_STATUS);
 }
@@ -132,16 +130,16 @@ my $mime = MIME::Entity->build
    Subject => encode('MIME-Header-ISO_2022_JP',
                      strftime($config{MAIL_TITLE}, localtime)),
    Data =>
-   [map {encode_utf8($_)}
+   [encode_utf8(join '',
     @{$config{MAIL_HEADERS}},
     (map {
-        my %n = %{$node{$_}};
+        my %t = %{$topics{$_}};
         # date:2014/12/08, title:test, comment:3
         sprintf($config{MAIL_UPDATE_TEMPLATE},
-                $n{date}, $n{title}, $n{comment_count})
-    } @node_id),
+                $t{date}, $t{title}, $t{comment_count})
+    } @topic_ids),
     @{$config{MAIL_FOOTERS}}
-   ]);
+    )]);
 
 my $smtp = Net::SMTP::TLS->new
   ($config{SMTP_HOST},
