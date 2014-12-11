@@ -1,9 +1,18 @@
+=head1 NAME
+
+mixi community checker
+
+=head1 SYNOPSIS
+
+Access mixi.jp, retrieve mixi community topics for mailing updates..
+
+=cut
+
 use strict;
 use warnings;
 use utf8;
 
 use Encode;
-use MIME::Base64;
 use POSIX 'strftime';
 use Storable qw(nfreeze thaw);
 
@@ -29,7 +38,6 @@ BEGIN {
 }
 
 {
-    # ref: http://yoosee.net/d/archives/2004/08/25/002.html
     use Carp 'croak';
     no strict 'refs';
     no warnings 'redefine';
@@ -132,14 +140,14 @@ my $mime = MIME::Entity->build
                      strftime($config{MAIL_TITLE}, localtime)),
    Data =>
    [encode_utf8(join '',
-    @{$config{MAIL_HEADERS}},
+    $config{MAIL_HEADER},
     (map {
         my %t = %{$topics{$_}};
         # date:2014/12/08, title:test, comment:3
         sprintf($config{MAIL_UPDATE_TEMPLATE},
                 $t{date}, $t{title}, $t{comment_count})
     } @topic_ids),
-    @{$config{MAIL_FOOTERS}}
+    $config{MAIL_FOOTER}
     )]);
 
 my $smtp = Net::SMTP::TLS->new

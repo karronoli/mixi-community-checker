@@ -14,14 +14,20 @@ use utf8;
     SMTP_PASSWORD => 'testpassword',
     SMTP_FROM => 'test@example.com',
     SMTP_TO => 'ml@example.com',
-    MAIL_HEADERS => [
-        "コミュニティに更新がありました．\n",
-        "※このメールアドレスは配信専用です．\n\n"
-    ],
-    MAIL_UPDATE_TEMPLATE =>
-      '更新日:%1$s, タイトル:%2$s, コメント数:%3$s' . "\n",
-    MAIL_FOOTERS => [
-        "\nご用の場合は test@example.com へ\n"
-    ],
     MAIL_TITLE => 'コミュニティ更新速報 %Y/%m/%d',
+    MAIL_HEADER => <<'EOS'
+コミュニティに更新がありました．
+※このメールアドレスは配信専用です．
+
+EOS
+    ,
+    MAIL_UPDATE_TEMPLATE => <<'EOS'
+更新日:%1$s, タイトル:%2$s, コメント数:%3$s
+EOS
+    ,
+    MAIL_FOOTER => <<'EOS'
+
+ご用の場合は test@example.com へ
+EOS
+    ,
 )

@@ -4,5 +4,4 @@ requires 'HTML::TreeBuilder::XPath', '0.14';
 requires 'URI', '1.65';
 requires 'IO::Iron', '0.11';
 requires 'MIME::Entity', '5.505';
-requires 'Authen::SASL', '2.16';
 requires 'Net::SMTP::TLS', '0.12';
