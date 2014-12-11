@@ -40,7 +40,8 @@ BEGIN {
         if(not $num == 220){
                 croak "Invalid response for STARTTLS: $num $txt\n";
         }
-        if(not IO::Socket::SSL::socket_to_SSL($me->{sock})){
+        if(not IO::Socket::SSL::socket_to_SSL($me->{sock},
+          SSL_version => '!SSLv23:!SSLv3:!SSLv2')){
                 croak "Couldn't start TLS: ".IO::Socket::SSL::errstr."\n";
         }
         $me->hello();
