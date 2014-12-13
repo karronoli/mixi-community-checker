@@ -77,8 +77,15 @@ my %topics = do {
         my ($a) = $dt->findnodes(q{./following-sibling::dd/a[1]});
         my $uri = URI->new($a->attr('href'));
         my %q = $uri->query_form;
-        my $date = ($dt->as_text =~ /:/)?
+        my $_date = ($dt->as_text =~ /:/)?
           strftime(MIXI_DATE_TEMPLATE, localtime): $dt->as_text;
+        # strftime: Set UTF-8 flag appropriately on return
+        # http://perl5.git.perl.org/perl.git/commit/9717af6d049902fc887c412facb2d15e785ef1a4
+        # Fix on perl 5.20.1 and up.
+        my $date = utf8::is_utf8($_date)?
+          $_date: decode_utf8($_date, Encode::FB_CROAK);
+        printf "[DEBUG] id:%s dt:%s date:%s\n",
+          $q{id}, $dt->as_text, $date unless utf8::is_utf8($date);
         $result{$q{id}} =
           {comment_count => $q{comment_count},
            date => $date,
@@ -113,12 +120,18 @@ my @topic_ids = do {
     if (my $old = eval{$iron_cache->get(key => $config{IRON_CACHE_KEY})}) {
         my %old = %{thaw $old->value};
         my @update = grep {
-            $topics{$_} &&
-              ($topics{$_}->{comment_count} ne $old{$_}->{comment_count})
-              || $topics{$_}->{date} ne $old{$_}->{date}
+            exists $topics{$_} && %{$topics{$_}}
+              && ($topics{$_}->{comment_count} ne $old{$_}->{comment_count}
+                  || $topics{$_}->{date} ne $old{$_}->{date})
           } keys %old;
-        my @new = grep { !exists $old{$_} } keys %topics;
+        my @new = grep { !exists $old{$_} && %{$old{$_}} } keys %topics;
         push @result, @update, @new;
+        my $old_item = IO::Iron::IronCache::Item->new(value => nfreeze(\%old));
+        eval {
+            $iron_cache->put(key => $config{IRON_CACHE_OLD_KEY},
+                             item => $old_item)
+        };
+        warn $@ if $@;
     } else {
         push @result, keys %topics;
     }
@@ -133,11 +146,13 @@ unless (@topic_ids) {
 
 my $mime = MIME::Entity->build
   (Type  => 'text/plain',
-   Encoding => '-SUGGEST',
+   Charset => 'UTF-8',
+   Encoding => 'quoted-printable',
    From => $config{SMTP_FROM},
    To => $config{SMTP_TO},
    Subject => encode('MIME-Header-ISO_2022_JP',
-                     strftime($config{MAIL_TITLE}, localtime)),
+                     strftime($config{MAIL_TITLE}, localtime),
+                     Encode::FB_CROAK | Encode::LEAVE_SRC),
    Data =>
    [encode_utf8(join '',
     $config{MAIL_HEADER},

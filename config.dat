@@ -9,6 +9,7 @@ use utf8;
     # see name policy: perldoc IO::Iron #Policies
     IRON_CACHE_NAME => 'ironcachename',
     IRON_CACHE_KEY => 'mykey',
+    IRON_CACHE_OLD_KEY => 'myoldkey',
     SMTP_HOST => 'smtp.example.com',
     SMTP_USERNAME => 'test',
     SMTP_PASSWORD => 'testpassword',
