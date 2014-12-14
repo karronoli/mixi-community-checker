@@ -148,7 +148,7 @@ my $mime = MIME::Entity->build
   (Type  => 'text/plain',
    Charset => 'UTF-8',
    Encoding => 'quoted-printable',
-   From => $config{SMTP_FROM},
+   From => "Notify <$config{SMTP_FROM}>",
    To => $config{SMTP_TO},
    Subject => encode('MIME-Header-ISO_2022_JP',
                      strftime($config{MAIL_TITLE}, localtime),
