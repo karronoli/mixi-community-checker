@@ -120,11 +120,12 @@ my @topic_ids = do {
     if (my $old = eval{$iron_cache->get(key => $config{IRON_CACHE_KEY})}) {
         my %old = %{thaw $old->value};
         my @update = grep {
-            exists $topics{$_} && %{$topics{$_}}
+            exists $topics{$_} && ref $topics{$_} eq 'HASH'
               && ($topics{$_}->{comment_count} ne $old{$_}->{comment_count}
                   || $topics{$_}->{date} ne $old{$_}->{date})
           } keys %old;
-        my @new = grep { !exists $old{$_} && %{$old{$_}} } keys %topics;
+        my @new = grep { !exists $old{$_}
+                           && ref $old{$_} eq 'HASH' } keys %topics;
         push @result, @update, @new;
         my $old_item = IO::Iron::IronCache::Item->new(value => nfreeze(\%old));
         eval {
